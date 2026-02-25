@@ -1,0 +1,23 @@
+name = "council1901"
+main = "build/worker/shim.mjs"
+compatibility_date = "2024-01-01"
+
+[build]
+command = "worker-build --release"
+
+[[kv_namespaces]]
+binding = "COUNCIL_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_PREVIEW_KV_NAMESPACE_ID"
+
+# ---------------------------------------------------------------------------
+# Local development
+# ---------------------------------------------------------------------------
+# 1. cd backend && npm install
+# 2. Copy .dev.vars.example → .dev.vars and set HMAC_SECRET
+# 3. npm run dev   (runs: wrangler dev)
+#
+# wrangler dev uses a local KV store (no real namespace ID needed).
+# The frontend dev server proxies /api/* to http://localhost:8787 automatically.
+#
+# Set HMAC_SECRET for production via: wrangler secret put HMAC_SECRET

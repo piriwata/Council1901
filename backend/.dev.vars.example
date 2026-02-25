@@ -1,0 +1,8 @@
+# Local development environment variables for wrangler dev
+# Copy this file to .dev.vars (never commit .dev.vars) and fill in the values.
+#
+# wrangler dev reads this file automatically as "secrets" for the Worker.
+
+# Any random string works for local development, e.g.:
+#   python3 -c "import secrets; print(secrets.token_hex(32))"
+HMAC_SECRET="change-me-to-a-random-secret"
