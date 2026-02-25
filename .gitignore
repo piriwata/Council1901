@@ -2,6 +2,8 @@
 backend/target/
 backend/build/
 backend/.wrangler/
+backend/node_modules/
+backend/.dev.vars
 
 # Node / Astro
 frontend/node_modules/
