@@ -15,7 +15,7 @@ export default defineConfig({
       // Start the Cloudflare Worker backend with wrangler dev.
       // Creates .dev.vars from the example file if it does not already exist.
       command: 'cd ../backend && (cp -n .dev.vars.example .dev.vars 2>/dev/null || true) && npm run dev',
-      url: 'http://localhost:8787',
+      url: 'http://localhost:8787/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },

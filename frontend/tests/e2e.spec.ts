@@ -35,7 +35,7 @@ test.describe('Auth screen', () => {
     await page.goto('/');
     await expect(page.locator('#auth-screen')).toBeVisible();
     await expect(page.locator('#room-screen')).toBeHidden();
-    await expect(page.locator('h2')).toHaveText('Join a room');
+    await expect(page.locator('#auth-screen h2')).toHaveText('Join a room');
     await page.screenshot({ path: 'test-results/01-auth-screen.png', fullPage: true });
   });
 

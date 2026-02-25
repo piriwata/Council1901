@@ -109,10 +109,17 @@ npm run preview   # serves dist/ at http://localhost:4321
 ### E2E tests (Playwright)
 ```bash
 cd frontend
-npm test          # builds site, starts preview server, runs 15 tests
+npm test          # starts wrangler dev (:8787) + astro dev (:4321), runs 13 tests
 ```
 
-Tests do **not** require a running backend — all `/api/*` calls are intercepted with `page.route()`. No Playwright install command needed (already handled by `npm install`).
+Tests run against the **real backend** (`wrangler dev`) — no API mocks are used.
+The Astro dev server proxies `/api/*` to `localhost:8787` automatically.
+Playwright manages both server processes; pre-requisites:
+- `rustup target add wasm32-unknown-unknown`
+- `cargo install worker-build`
+- `cd backend && npm install`
+
+`backend/.dev.vars` is auto-created from `.dev.vars.example` if absent (any secret value works locally).
 
 ---
 
