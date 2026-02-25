@@ -8,6 +8,10 @@ frontend/node_modules/
 frontend/dist/
 frontend/.astro/
 
+# Playwright
+frontend/playwright-report/
+frontend/test-results/
+
 # OS
 .DS_Store
 Thumbs.db
