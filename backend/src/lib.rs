@@ -400,6 +400,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         (Method::Post, "/api/conversations") => handle_post_conversations(req, &env).await,
         (Method::Get, "/api/messages") => handle_get_messages(req, &env).await,
         (Method::Post, "/api/messages") => handle_post_messages(req, &env).await,
+        (Method::Get, "/api/health") => with_cors(Response::ok("ok")?),
         _ => err("Not Found", 404),
     }
 }
