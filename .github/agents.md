@@ -114,6 +114,8 @@ npm test          # starts wrangler dev (:8787) + astro dev (:4321), runs 13 tes
 
 > **Important for agent sessions**: Always run the Playwright E2E tests (`cd frontend && npm test`) after making any changes to `frontend/src/pages/index.astro` or `frontend/tests/e2e.spec.ts`. CSS class names and DOM selectors used in tests must stay in sync with the UI code — if you remove or rename a CSS class that tests reference, update the tests accordingly.
 
+> **UI change screenshots**: Whenever you make a visible UI change, capture and include a screenshot in your PR description or comment reply so reviewers can see the impact of the change.
+
 Tests run against the **real backend** (`wrangler dev`) — no API mocks are used.
 The Astro dev server proxies `/api/*` to `localhost:8787` automatically.
 Playwright manages both server processes; pre-requisites:
