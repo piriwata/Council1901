@@ -31,6 +31,26 @@ async function loginViaUI(page: Page, roomId: string) {
 // ---------------------------------------------------------------------------
 
 test.describe('Auth screen', () => {
+  test('rejects second login for the same room and country', async ({ page }) => {
+    const roomId = uniqueRoomId();
+
+    // First login – should succeed and claim the seat.
+    await page.goto('/');
+    await loginViaUI(page, roomId);
+    await expect(page.locator('#room-screen')).toBeVisible();
+
+    // Clear local storage to simulate a fresh browser session.
+    await page.evaluate(() => localStorage.clear());
+
+    // Second login with the same room + country – should be rejected.
+    await page.goto('/');
+    await page.fill('#room-id', roomId);
+    await page.selectOption('#country-select', COUNTRY);
+    await page.click('button[type="submit"]');
+    await expect(page.locator('#auth-error')).toContainText('Seat already taken');
+    await page.screenshot({ path: 'test-results/02-seat-taken.png', fullPage: true });
+  });
+
   test('shows auth screen on first visit', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#auth-screen')).toBeVisible();

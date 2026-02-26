@@ -159,8 +159,23 @@ async fn handle_auth(mut req: Request, env: &Env) -> Result<Response> {
         return err("Invalid room_id", 400);
     }
 
+    let kv = env.kv(KV_BINDING)?;
+    let seat_key = format!("room:{}:seat:{}", body.room_id, body.country);
+
+    // Once a seat is claimed, no new token can be issued for that room+country.
+    // Note: KV does not support atomic check-and-set, so a very narrow race
+    // condition exists where two simultaneous first-time requests could both
+    // pass this check. In practice this is negligible for a diplomacy game.
+    let taken: Option<bool> = kv_get(&kv, &seat_key).await?;
+    if taken.is_some() {
+        return err("Seat already taken", 409);
+    }
+
     let secret = env.secret(SECRET_BINDING)?.to_string();
     let access_token = make_token(&secret, &body.room_id, &body.country);
+
+    // Mark this seat as claimed before returning the token.
+    kv_put(&kv, &seat_key, &true).await?;
 
     #[derive(Serialize)]
     struct Resp {
