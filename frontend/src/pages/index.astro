@@ -208,6 +208,22 @@
       .conv-participants {
         color: var(--text);
         font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .conv-item.unread .conv-participants {
+        font-weight: 700;
+      }
+
+      .unread-badge {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: var(--accent);
+        border-radius: 50%;
+        flex-shrink: 0;
       }
 
       /* Main chat area */
@@ -479,6 +495,8 @@
         messages: [],
         lastTimestamp: 0,
         pollTimer: null,
+        convLastMsg: {},
+        convUnread: {},
       };
 
       // ===== DOM refs =====
@@ -534,7 +552,7 @@
       function logout() {
         if (state.pollTimer) clearInterval(state.pollTimer);
         localStorage.removeItem(STORAGE_KEY);
-        state = { token: null, roomId: null, country: null, conversations: [], activeConvId: null, messages: [], lastTimestamp: 0, pollTimer: null };
+        state = { token: null, roomId: null, country: null, conversations: [], activeConvId: null, messages: [], lastTimestamp: 0, pollTimer: null, convLastMsg: {}, convUnread: {} };
         showAuth();
       }
 
@@ -575,12 +593,18 @@
           $convList.innerHTML = '<div style="padding:14px;font-size:0.8rem;color:var(--muted)">No conversations yet</div>';
           return;
         }
-        for (const conv of state.conversations) {
+        const sorted = [...state.conversations].sort((a, b) => {
+          const ta = state.convLastMsg[a.conversation_id] || 0;
+          const tb = state.convLastMsg[b.conversation_id] || 0;
+          return tb - ta;
+        });
+        for (const conv of sorted) {
           const others = conv.participants.filter(p => p !== state.country);
           const label = others.map(capitalize).join(' · ');
+          const unread = !!state.convUnread[conv.conversation_id];
           const div = document.createElement('div');
-          div.className = 'conv-item' + (conv.conversation_id === state.activeConvId ? ' active' : '');
-          div.innerHTML = `<div class="conv-participants">${label}</div>`;
+          div.className = 'conv-item' + (conv.conversation_id === state.activeConvId ? ' active' : '') + (unread ? ' unread' : '');
+          div.innerHTML = `<div class="conv-participants">${label}${unread ? '<span class="unread-badge"></span>' : ''}</div>`;
           div.addEventListener('click', () => selectConversation(conv.conversation_id));
           $convList.appendChild(div);
         }
@@ -613,11 +637,17 @@
           if (resp.status === 401) { logout(); return; }
           if (!resp.ok) return;
           const newMsgs = await resp.json();
+          if (state.convUnread[convId]) {
+            state.convUnread[convId] = false;
+            renderConversations();
+          }
           if (newMsgs.length > 0) {
             state.messages = state.lastTimestamp === 0
               ? newMsgs
               : [...state.messages, ...newMsgs];
             state.lastTimestamp = newMsgs[newMsgs.length - 1].timestamp;
+            state.convLastMsg[convId] = state.lastTimestamp;
+            renderConversations();
             renderMessages();
           }
         } catch (_) {}
@@ -646,9 +676,29 @@
       }
 
       // ===== Poll =====
+      async function checkConvMessages(convId) {
+        try {
+          const since = state.convLastMsg[convId] || 0;
+          const url = `/api/messages?conversation_id=${encodeURIComponent(convId)}&since=${since}`;
+          const resp = await fetch(url, { headers: authHeaders() });
+          if (!resp.ok) return;
+          const newMsgs = await resp.json();
+          if (newMsgs.length > 0) {
+            state.convLastMsg[convId] = newMsgs[newMsgs.length - 1].timestamp;
+            state.convUnread[convId] = true;
+            renderConversations();
+          }
+        } catch (_) {}
+      }
+
       function poll() {
         if (state.activeConvId) fetchMessages(state.activeConvId);
         else loadConversations();
+        for (const conv of state.conversations) {
+          if (conv.conversation_id !== state.activeConvId) {
+            checkConvMessages(conv.conversation_id);
+          }
+        }
       }
 
       // ===== New Conversation Modal =====
