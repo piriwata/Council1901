@@ -261,3 +261,56 @@ test.describe('Messaging', () => {
   });
 });
 
+test.describe('Token URL', () => {
+  test('URL includes token parameter after login', async ({ page }) => {
+    const roomId = uniqueRoomId();
+    await page.goto('/');
+    await loginViaUI(page, roomId);
+    expect(page.url()).toContain('token=');
+    await page.screenshot({ path: 'test-results/14-token-in-url.png', fullPage: true });
+  });
+
+  test('URL reminder shows country name after login', async ({ page }) => {
+    const roomId = uniqueRoomId();
+    await page.goto('/');
+    await loginViaUI(page, roomId);
+    await expect(page.locator('#reminder-country')).toContainText('England');
+  });
+
+  test('token URL auto-authenticates in a fresh session', async ({ browser }) => {
+    const roomId = uniqueRoomId();
+
+    // First: log in and capture the token URL.
+    const ctx1 = await browser.newContext();
+    const page1 = await ctx1.newPage();
+    await page1.goto('/');
+    await loginViaUI(page1, roomId);
+    const tokenUrl = page1.url();
+    await ctx1.close();
+
+    // Second: fresh browser context (no localStorage), visit the token URL directly.
+    const ctx2 = await browser.newContext();
+    const page2 = await ctx2.newPage();
+    await page2.goto(tokenUrl);
+    await expect(page2.locator('#room-screen')).toBeVisible();
+    await expect(page2.locator('#auth-screen')).toBeHidden();
+    await expect(page2.locator('#header-info')).toContainText('England');
+    await page2.screenshot({ path: 'test-results/15-token-url-auth.png', fullPage: true });
+    await ctx2.close();
+  });
+
+  test('taken country option is disabled when room is pre-filled from URL', async ({ page }) => {
+    const roomId = uniqueRoomId();
+
+    // Claim the england seat.
+    await page.goto('/');
+    await loginViaUI(page, roomId);
+
+    // Clear storage and reload the room URL — england should now be disabled.
+    await page.evaluate(() => localStorage.clear());
+    await page.goto(`/?room=${encodeURIComponent(roomId)}`);
+    await expect(page.locator('#country-select option[value="england"]')).toBeDisabled();
+    await page.screenshot({ path: 'test-results/16-seat-taken-disabled.png', fullPage: true });
+  });
+});
+

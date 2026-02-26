@@ -400,6 +400,36 @@ async fn handle_post_messages(mut req: Request, env: &Env) -> Result<Response> {
     with_cors(Response::from_json(&Resp { message_id })?)
 }
 
+// ==================== GET /api/seats ====================
+
+async fn handle_get_seats(req: Request, env: &Env) -> Result<Response> {
+    let url = req.url()?;
+    let params: HashMap<_, _> = url.query_pairs().collect();
+    let room_id = match params.get("room_id") {
+        Some(id) => id.to_string(),
+        None => return err("Missing room_id", 400),
+    };
+    if room_id.is_empty() || room_id.len() > 64 {
+        return err("Invalid room_id", 400);
+    }
+
+    let kv = env.kv(KV_BINDING)?;
+    let mut taken: Vec<String> = Vec::new();
+    for country in ["england", "france", "germany", "italy", "austria", "russia", "turkey"] {
+        let seat_key = format!("room:{}:seat:{}", room_id, country);
+        let t: Option<bool> = kv_get(&kv, &seat_key).await?;
+        if t.is_some() {
+            taken.push(country.to_string());
+        }
+    }
+
+    #[derive(Serialize)]
+    struct Resp {
+        taken: Vec<String>,
+    }
+    with_cors(Response::from_json(&Resp { taken })?)
+}
+
 // ==================== Entry point ====================
 
 #[event(fetch)]
@@ -411,6 +441,7 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let path = req.path();
     match (req.method(), path.as_str()) {
         (Method::Post, "/api/auth") => handle_auth(req, &env).await,
+        (Method::Get, "/api/seats") => handle_get_seats(req, &env).await,
         (Method::Get, "/api/conversations") => handle_get_conversations(req, &env).await,
         (Method::Post, "/api/conversations") => handle_post_conversations(req, &env).await,
         (Method::Get, "/api/messages") => handle_get_messages(req, &env).await,
