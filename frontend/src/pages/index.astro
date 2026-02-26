@@ -436,7 +436,7 @@
 
     <!-- URL Reminder Banner -->
     <div id="url-reminder">
-      <span>🔗 Bookmark this URL to return to your room: <a id="room-url-link" href=""></a></span>
+      <span>🔗 Your country access URL — share to play as <strong id="reminder-country"></strong> from any device: <a id="room-url-link" href=""></a></span>
       <button id="btn-url-reminder-close" aria-label="Dismiss">×</button>
     </div>
 
@@ -559,6 +559,7 @@
       const $msgInput     = document.getElementById('msg-input');
       const $urlReminder  = document.getElementById('url-reminder');
       const $roomUrlLink  = document.getElementById('room-url-link');
+      const $reminderCountry = document.getElementById('reminder-country');
       const $btnUrlReminderClose = document.getElementById('btn-url-reminder-close');
 
       // ===== Helpers =====
@@ -577,6 +578,7 @@
         const url = new URL(window.location.href);
         $roomUrlLink.textContent = url.toString();
         $roomUrlLink.href = url.toString();
+        $reminderCountry.textContent = capitalize(state.country);
         $urlReminder.classList.add('show');
       }
 
@@ -624,6 +626,7 @@
         $headerInfo.textContent = `Room: ${state.roomId}  ·  You: ${capitalize(state.country)}`;
         const roomUrl = new URL(window.location.href);
         roomUrl.searchParams.set('room', state.roomId);
+        roomUrl.searchParams.set('token', state.token);
         history.pushState({}, '', roomUrl.toString());
         loadConversations();
         if (state.pollTimer) clearInterval(state.pollTimer);
@@ -804,6 +807,21 @@
         }
       }
 
+      // ===== Seats =====
+      async function fetchSeats(roomId) {
+        if (!roomId) return;
+        try {
+          const resp = await fetch(`/api/seats?room_id=${encodeURIComponent(roomId)}`);
+          if (!resp.ok) return;
+          const { taken } = await resp.json();
+          const select = document.getElementById('country-select');
+          for (const opt of select.options) {
+            if (!opt.value) continue;
+            opt.disabled = taken.includes(opt.value);
+          }
+        } catch (_) {}
+      }
+
       // ===== Event listeners =====
       $authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -819,6 +837,10 @@
         } finally {
           btn.disabled = false;
         }
+      });
+
+      document.getElementById('room-id').addEventListener('change', (e) => {
+        fetchSeats(e.target.value.trim());
       });
 
       $btnLogout.addEventListener('click', logout);
@@ -867,11 +889,31 @@
         }
       } else {
         const params = new URLSearchParams(window.location.search);
+        const tokenFromUrl = params.get('token');
         const roomFromUrl = params.get('room');
-        if (roomFromUrl) {
-          document.getElementById('room-id').value = roomFromUrl;
+        if (tokenFromUrl) {
+          // Token URL: auto-authenticate using the access token embedded in the URL.
+          // Token format: {room_id}|{country}|{hmac_hex}
+          const parts = tokenFromUrl.split('|');
+          if (parts.length >= 3) {
+            const country = parts[parts.length - 2];
+            const roomId = parts.slice(0, parts.length - 2).join('|');
+            state.token = tokenFromUrl;
+            state.roomId = roomId;
+            state.country = country;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: tokenFromUrl, roomId, country }));
+            showRoom();
+            showUrlReminder();
+          } else {
+            showAuth();
+          }
+        } else {
+          if (roomFromUrl) {
+            document.getElementById('room-id').value = roomFromUrl;
+            fetchSeats(roomFromUrl);
+          }
+          showAuth();
         }
-        showAuth();
       }
     </script>
   </body>
