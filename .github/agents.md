@@ -109,7 +109,7 @@ npm run preview   # serves dist/ at http://localhost:4321
 ### E2E tests (Playwright)
 ```bash
 cd frontend
-npm test          # starts wrangler dev (:8787) + astro dev (:4321), runs 13 tests
+npm test          # starts wrangler dev (:8787) + astro dev (:4321), runs 23 tests
 ```
 
 > **Important for agent sessions**: Always run the Playwright E2E tests (`cd frontend && npm test`) after making any changes to `frontend/src/pages/index.astro` or `frontend/tests/e2e.spec.ts`. CSS class names and DOM selectors used in tests must stay in sync with the UI code — if you remove or rename a CSS class that tests reference, update the tests accordingly.
@@ -131,7 +131,8 @@ Playwright manages both server processes; pre-requisites:
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/auth` | — | Issue access token for `(room_id, country)` |
+| `POST` | `/api/auth` | — | Issue access token for `(room_id, country)`; claims the seat (409 if taken) |
+| `GET` | `/api/seats?room_id=…` | — | Return list of countries already claimed in the room |
 | `GET` | `/api/conversations?room_id=…` | Bearer | List conversations where caller is a participant |
 | `POST` | `/api/conversations` | Bearer | Create 2–3 participant conversation (idempotent) |
 | `GET` | `/api/messages?conversation_id=…&since=…` | Bearer | Fetch messages after `since` ms timestamp |
@@ -143,6 +144,7 @@ The token is parsed right-to-left so room IDs containing `|` are safe.
 ### KV key schema
 ```
 room:{room_id}:conversations          → JSON string[]  (list of conv IDs)
+room:{room_id}:seat:{country}         → true           (marks country seat as claimed)
 conv:{conv_id}:meta                   → { room_id, participants[] }
 conv:{conv_id}:msg:{ts:020}:{uuid}    → Message JSON
 ```
