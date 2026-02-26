@@ -190,7 +190,7 @@ test.describe('Messaging', () => {
     await page.fill('#msg-input', msgText);
     await page.click('#send-form button[type="submit"]');
 
-    const msgEl = page.locator('.msg.mine .msg-text');
+    const msgEl = page.locator('.msg .msg-text');
     await expect(msgEl).toContainText(msgText);
     await page.screenshot({ path: 'test-results/10-message-sent.png', fullPage: true });
   });

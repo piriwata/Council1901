@@ -11,14 +11,14 @@
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
       :root {
-        --bg: #1a1a2e;
-        --surface: #16213e;
-        --card: #0f3460;
-        --accent: #e94560;
-        --text: #eaeaea;
-        --muted: #8892a4;
-        --border: #2a3a5e;
-        --success: #4caf8a;
+        --bg: #f5f0e8;
+        --surface: #ede8dc;
+        --card: #faf6ef;
+        --accent: #5a3e28;
+        --text: #2c1f0e;
+        --muted: #7a6a55;
+        --border: #c8bfad;
+        --success: #3a6e42;
         --radius: 6px;
         --font: 'Segoe UI', system-ui, sans-serif;
       }
@@ -199,9 +199,9 @@
         border-left: 3px solid transparent;
         font-size: 0.85rem;
       }
-      .conv-item:hover { background: rgba(255,255,255,0.04); }
+      .conv-item:hover { background: rgba(0,0,0,0.05); }
       .conv-item.active {
-        background: rgba(233,69,96,0.12);
+        background: rgba(90,62,40,0.1);
         border-left-color: var(--accent);
       }
 
@@ -245,31 +245,20 @@
       }
 
       .msg {
-        max-width: 72%;
-        padding: 8px 12px;
-        border-radius: 8px;
+        padding: 10px 14px;
+        border-radius: 4px;
         font-size: 0.88rem;
-        line-height: 1.45;
-      }
-
-      .msg.mine {
+        line-height: 1.5;
         background: var(--card);
-        align-self: flex-end;
-        border-bottom-right-radius: 2px;
-      }
-
-      .msg.theirs {
-        background: var(--surface);
         border: 1px solid var(--border);
-        align-self: flex-start;
-        border-bottom-left-radius: 2px;
+        border-left: 3px solid var(--country-color, var(--accent));
       }
 
       .msg-sender {
         font-size: 0.72rem;
-        color: var(--accent);
+        color: var(--country-color, var(--accent));
         margin-bottom: 3px;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: capitalize;
       }
 
@@ -468,6 +457,15 @@
 
     <script>
       const COUNTRIES = ['england','france','germany','italy','austria','russia','turkey'];
+      const COUNTRY_COLORS = {
+        england: '#8b1a1a',
+        france:  '#1a3a8b',
+        germany: '#333333',
+        italy:   '#1a7a1a',
+        austria: '#8b4513',
+        russia:  '#4a4a8b',
+        turkey:  '#8b7000',
+      };
       const STORAGE_KEY = 'council1901_auth';
       const POLL_INTERVAL = 3000;
 
@@ -630,9 +628,11 @@
         for (const msg of state.messages) {
           const div = document.createElement('div');
           const mine = msg.sender_country === state.country;
-          div.className = `msg ${mine ? 'mine' : 'theirs'}`;
+          const color = COUNTRY_COLORS[msg.sender_country] || 'var(--accent)';
+          div.className = 'msg';
+          div.style.setProperty('--country-color', color);
           div.innerHTML = `
-            ${!mine ? `<div class="msg-sender">${capitalize(msg.sender_country)}</div>` : ''}
+            <div class="msg-sender">${capitalize(msg.sender_country)}${mine ? ' (You)' : ''}</div>
             <div class="msg-text">${escapeHtml(msg.content)}</div>
             <div class="msg-time">${formatTime(msg.timestamp)}</div>
           `;
