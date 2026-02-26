@@ -196,6 +196,51 @@ test.describe('Conversation flow', () => {
   });
 });
 
+test.describe('URL reminder', () => {
+  test('shows URL reminder banner after login', async ({ page }) => {
+    const roomId = uniqueRoomId();
+    await page.goto('/');
+    await loginViaUI(page, roomId);
+    await expect(page.locator('#url-reminder')).toBeVisible();
+    await expect(page.locator('#room-url-link')).toContainText(`room=${encodeURIComponent(roomId)}`);
+    await page.screenshot({ path: 'test-results/11-url-reminder.png', fullPage: true });
+  });
+
+  test('URL is updated to include room query parameter after login', async ({ page }) => {
+    const roomId = uniqueRoomId();
+    await page.goto('/');
+    await loginViaUI(page, roomId);
+    expect(page.url()).toContain(`room=${encodeURIComponent(roomId)}`);
+  });
+
+  test('dismiss button hides the URL reminder banner', async ({ page }) => {
+    const roomId = uniqueRoomId();
+    await page.goto('/');
+    await loginViaUI(page, roomId);
+    await expect(page.locator('#url-reminder')).toBeVisible();
+    await page.click('#btn-url-reminder-close');
+    await expect(page.locator('#url-reminder')).toBeHidden();
+    await page.screenshot({ path: 'test-results/12-url-reminder-dismissed.png', fullPage: true });
+  });
+
+  test('room ID is pre-filled from URL query parameter', async ({ page }) => {
+    const roomId = uniqueRoomId();
+    await page.goto(`/?room=${encodeURIComponent(roomId)}`);
+    await expect(page.locator('#room-id')).toHaveValue(roomId);
+    await page.screenshot({ path: 'test-results/13-room-prefilled.png', fullPage: true });
+  });
+
+  test('URL reminder is hidden and URL cleared after logout', async ({ page }) => {
+    const roomId = uniqueRoomId();
+    await page.goto('/');
+    await loginViaUI(page, roomId);
+    await expect(page.locator('#url-reminder')).toBeVisible();
+    await page.click('#btn-logout');
+    await expect(page.locator('#url-reminder')).toBeHidden();
+    expect(page.url()).not.toContain('room=');
+  });
+});
+
 test.describe('Messaging', () => {
   test('sending a message displays it in the chat', async ({ page }) => {
     const roomId = uniqueRoomId();

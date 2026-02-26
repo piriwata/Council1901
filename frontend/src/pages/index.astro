@@ -134,6 +134,39 @@
         min-height: 18px;
       }
 
+      /* ===== URL Reminder Banner ===== */
+      #url-reminder {
+        background: #eaf4ea;
+        border-bottom: 1px solid var(--border);
+        padding: 8px 20px;
+        display: none;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.82rem;
+        color: var(--text);
+        flex-shrink: 0;
+      }
+      #url-reminder.show { display: flex; }
+
+      #url-reminder span { flex: 1; }
+
+      #url-reminder a {
+        color: var(--accent);
+        word-break: break-all;
+      }
+
+      #btn-url-reminder-close {
+        background: transparent;
+        border: none;
+        font-size: 1.1rem;
+        cursor: pointer;
+        color: var(--muted);
+        padding: 0 4px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      #btn-url-reminder-close:hover { color: var(--text); }
+
       /* ===== Room Screen ===== */
       #room-screen {
         flex: 1;
@@ -401,6 +434,12 @@
       <button id="btn-logout" style="display:none">Logout</button>
     </header>
 
+    <!-- URL Reminder Banner -->
+    <div id="url-reminder">
+      <span>🔗 Bookmark this URL to return to your room: <a id="room-url-link" href=""></a></span>
+      <button id="btn-url-reminder-close" aria-label="Dismiss">×</button>
+    </div>
+
     <!-- Auth Screen -->
     <div id="auth-screen">
       <div class="auth-card">
@@ -518,6 +557,9 @@
       const $messages     = document.getElementById('messages');
       const $sendForm     = document.getElementById('send-form');
       const $msgInput     = document.getElementById('msg-input');
+      const $urlReminder  = document.getElementById('url-reminder');
+      const $roomUrlLink  = document.getElementById('room-url-link');
+      const $btnUrlReminderClose = document.getElementById('btn-url-reminder-close');
 
       // ===== Helpers =====
       function authHeaders() {
@@ -528,6 +570,14 @@
 
       function formatTime(ts) {
         return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+
+      // ===== URL Reminder =====
+      function showUrlReminder() {
+        const url = new URL(window.location.href);
+        $roomUrlLink.textContent = url.toString();
+        $roomUrlLink.href = url.toString();
+        $urlReminder.classList.add('show');
       }
 
       // ===== Auth =====
@@ -547,12 +597,15 @@
         state.country = country;
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: access_token, roomId, country }));
         showRoom();
+        showUrlReminder();
       }
 
       function logout() {
         if (state.pollTimer) clearInterval(state.pollTimer);
         localStorage.removeItem(STORAGE_KEY);
         state = { token: null, roomId: null, country: null, conversations: [], activeConvId: null, messages: [], lastTimestamp: 0, pollTimer: null, convLastMsg: {}, convUnread: {} };
+        history.pushState({}, '', '/');
+        $urlReminder.classList.remove('show');
         showAuth();
       }
 
@@ -569,6 +622,9 @@
         $roomScreen.style.display = 'block';
         $btnLogout.style.display = 'inline-block';
         $headerInfo.textContent = `Room: ${state.roomId}  ·  You: ${capitalize(state.country)}`;
+        const roomUrl = new URL(window.location.href);
+        roomUrl.searchParams.set('room', state.roomId);
+        history.pushState({}, '', roomUrl.toString());
         loadConversations();
         if (state.pollTimer) clearInterval(state.pollTimer);
         state.pollTimer = setInterval(poll, POLL_INTERVAL);
@@ -766,6 +822,7 @@
       });
 
       $btnLogout.addEventListener('click', logout);
+      $btnUrlReminderClose.addEventListener('click', () => $urlReminder.classList.remove('show'));
       $btnNewConv.addEventListener('click', openModal);
       $btnModalCancel.addEventListener('click', closeModal);
       $btnModalCreate.addEventListener('click', createConversation);
@@ -809,6 +866,11 @@
           showAuth();
         }
       } else {
+        const params = new URLSearchParams(window.location.search);
+        const roomFromUrl = params.get('room');
+        if (roomFromUrl) {
+          document.getElementById('room-id').value = roomFromUrl;
+        }
         showAuth();
       }
     </script>
